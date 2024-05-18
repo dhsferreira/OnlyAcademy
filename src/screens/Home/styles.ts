@@ -1,0 +1,169 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#E6EEFA',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 150,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    zIndex: 1,
+    backgroundColor: '#E6EEFA',
+    padding: 10,
+    borderRadius:50
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
+  },
+  backgroundImage: {
+    flex: 1,
+    resizeMode: 'cover',
+    width: '100%',
+    height: '50%', // Ajuste para cobrir apenas metade da tela
+  },
+  overlay: {
+    position: 'absolute',
+    top: '25%', // Comece a sobreposição do meio da tela
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#E6EEFA',
+    borderRadius: 50 // Cor da sobreposição
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 6,
+    resizeMode: 'cover',
+    marginBottom: 20,
+  },
+  profileimage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    resizeMode: 'cover',
+    marginBottom: 25, // Aumente conforme necessário
+    borderWidth: 5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 10, // Aumente conforme necessário
+  },
+  video: {
+    width: 300,
+    height: 200,
+    marginBottom: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: 300,
+    height: 300,
+    resizeMode: 'contain',
+  },
+  textContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 10, // Adiciona um espaçamento inferior
+  },
+  column: {
+    alignItems: 'center',
+    marginTop: -60
+  },
+  mainText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  subText: {
+    fontSize: 14,
+    color: 'gray',
+    marginBottom: 10, // Adiciona um espaçamento inferior
+  },
+  button: {
+    width: 150,
+    height: 40,
+    paddingVertical: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    marginBottom: 10,
+    elevation: 5, // Adiciona sombra
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2, // Adiciona um espaçamento inferior
+  },
+  smallButton: {
+    width: 80, // Tamanho menor para os novos botões
+    paddingVertical: 8, // Ajuste para o tamanho menor
+    borderWidth: 0,
+  },
+  buttonRow: {
+    flexDirection: 'row', // Botões dispostos em linha
+    justifyContent: 'center', // Centraliza os botões horizontalmente
+    width: '100%',
+    marginBottom: 10, // Adiciona um espaçamento inferior
+  },
+  blueButton: {
+    backgroundColor:'#5790DF',
+    borderRadius: 30,
+  },
+  whiteButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#000000',
+    borderRadius: 30,
+    
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  smallButtonText: {
+    color: 'black',
+  },
+  blueText: {
+    color: '#000000',
+  },
+  scrollContainer: {
+    width: '100%',
+    marginTop: 10, // Espaçamento superior
+    paddingHorizontal: 20, // Padding horizontal para evitar margens laterais
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20, // Espaçamento entre as linhas
+  },
+  bar: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: 'black',
+    marginTop: 5,
+    alignSelf: 'center',
+    width: 15,
+  },
+  cameraButtonContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1,
+  },
+});
