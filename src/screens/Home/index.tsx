@@ -1,46 +1,72 @@
-import React, { useState } from 'react';
-import { View, Image, Modal, TouchableOpacity, Text, ScrollView } from 'react-native';
-import { styles } from 'C:/Users/danie/Desktop/tela luiz separado/GitHub/OnlyAcademy/src/screens/Home/styles';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Image, Modal, TouchableOpacity, Text, ScrollView, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { styles } from './styles';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
-export default function home() {
+export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('all');
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const navigation = useNavigation();
+
+  const fetchPhotos = async () => {
+    try {
+      const storedPhotos = await AsyncStorage.getItem('photos');
+      if (storedPhotos) {
+        setPhotos(JSON.parse(storedPhotos));
+      }
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPhotos();
+    }, [])
+  );
+
+  const deletePhoto = async (photoUri: string) => {
+    const updatedPhotos = photos.filter(photo => photo !== photoUri);
+    setPhotos(updatedPhotos);
+    await AsyncStorage.setItem('photos', JSON.stringify(updatedPhotos));
+  };
+
+  const confirmDelete = (photoUri: string) => {
+    Alert.alert(
+      "Delete Photo",
+      "Are you sure you want to delete this photo?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", onPress: () => deletePhoto(photoUri) }
+      ]
+    );
+  };
 
   const renderImages = () => {
     switch (activeSection) {
       case 'all':
       case 'photos':
         return (
-          <>
-            <View style={styles.row}>
-              <TouchableOpacity onPress={() => setSelectedImage(require('./assets/paisagem.png'))}>
-                <Image source={require('./assets/paisagem.png')} style={styles.image} />
+          <View style={styles.imagesContainer}>
+            {photos.map((photoUri, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => setSelectedImage(photoUri)}
+                onLongPress={() => confirmDelete(photoUri)}
+              >
+                <Image source={{ uri: photoUri }} style={styles.image} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedImage(require('./assets/navio.png'))}>
-                <Image source={require('./assets/navio.png')} style={styles.image} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedImage(require('./assets/paisagem.png'))}>
-                <Image source={require('./assets/paisagem.png')} style={styles.image} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.row}>
-              <TouchableOpacity onPress={() => setSelectedImage(require('./assets/paisagem.png'))}>
-                <Image source={require('./assets/paisagem.png')} style={styles.image} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedImage(require('./assets/navio.png'))}>
-                <Image source={require('./assets/navio.png')} style={styles.image} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedImage(require('./assets/paisagem.png'))}>
-                <Image source={require('./assets/paisagem.png')} style={styles.image} />
-              </TouchableOpacity>
-            </View>
-          </>
+            ))}
+          </View>
         );
       case 'videos':
         return (
           <View>
-            {/* No momento, não há vídeos para mostrar */}
             <Text style={styles.subText}>No videos available</Text>
           </View>
         );
@@ -67,7 +93,6 @@ export default function home() {
       </TouchableOpacity>
 
       <View style={styles.backButton}>
-        {/* Inserir a imagem para o botão de voltar */}
         <TouchableOpacity onPress={() => {}}>
           <Image
             source={require('./assets/back.png')}
@@ -75,6 +100,17 @@ export default function home() {
           />
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity 
+        style={styles.cameraButton}
+        onPress={() => navigation.navigate('Camera')}
+      >
+        <Image
+          source={require('./assets/camera.png')}
+          style={styles.cameraIcon}
+        />
+        <Ionicons name="camera" size={32} color="black" />
+      </TouchableOpacity>
 
       <Modal
         animationType="slide"
@@ -102,7 +138,7 @@ export default function home() {
           <TouchableOpacity onPress={() => setSelectedImage(null)}>
             {selectedImage && (
               <Image
-                source={selectedImage}
+                source={{ uri: selectedImage }}
                 style={styles.modalImage}
               />
             )}
@@ -126,7 +162,6 @@ export default function home() {
         {"Gosto de paçoca, de dar grau de moto e\n          buzina na frente do hospital"}
       </Text>
 
-      {/* Botões adicionados abaixo do terceiro texto */}
       <View style={styles.buttonRow}>
         <TouchableOpacity style={[styles.button, styles.blueButton]}>
           <Text style={styles.buttonText}>Follow</Text>
@@ -136,7 +171,6 @@ export default function home() {
         </TouchableOpacity>
       </View>
 
-      {/* Botões "All", "Photos" e "Videos" */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={[styles.smallButton, { marginRight: 10, marginLeft: 0 }]}
@@ -163,7 +197,6 @@ export default function home() {
         </TouchableOpacity>
       </View>
 
-      {/* Scroll de imagens e vídeos */}
       <ScrollView style={styles.scrollContainer}>
         {renderImages()}
       </ScrollView>
