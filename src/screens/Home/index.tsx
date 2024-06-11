@@ -7,7 +7,7 @@ import { styles } from './styles';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-export default function HomeScreen() {
+export default function HomeScreen() { 
   const [modalVisible, setModalVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
