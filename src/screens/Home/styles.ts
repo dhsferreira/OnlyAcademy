@@ -193,4 +193,54 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
   },
+  subscriptionButton: {
+    position: 'absolute',
+    top: 100,
+    right: 10,
+    backgroundColor: 'white',
+    borderRadius: 25,
+    padding: 10,
+  },
+  subscriptionModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  subscriptionModalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  subscriptionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  subscriptionOption: {
+    width: '100%',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 10,
+    backgroundColor: '#5790DF',
+  },
+  subscriptionText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: 'black',
+  },
+  subscriptionButtonText: {
+    fontSize: 16,
+    color: 'black',
+    marginLeft: 5, // Ajuste conforme necessário
+  },
+  
 });

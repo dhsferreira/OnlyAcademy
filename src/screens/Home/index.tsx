@@ -1,26 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Image, Modal, TouchableOpacity, Text, ScrollView, Alert } from 'react-native';
+import { View, Image, Modal, TouchableOpacity, Text, ScrollView, Alert, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from './styles';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { supabase } from './supabase'; // Importe o supabase corretamente
+import { styles } from './styles';
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<{ uri: string, blob?: Blob }[]>([]);
+  const [subscriptionModalVisible, setSubscriptionModalVisible] = useState(false);
   const navigation = useNavigation();
 
   const fetchPhotos = async () => {
     try {
-      const storedPhotos = await AsyncStorage.getItem('photos');
-      if (storedPhotos) {
-        setPhotos(JSON.parse(storedPhotos));
+      const { data, error } = await supabase.storage.from('images').list();
+      if (error) {
+        console.error('Erro ao buscar imagens do Supabase:', error.message);
+        return;
       }
+
+      const fetchedPhotos = await Promise.all(data.map(async (item: any) => {
+        const response = await fetch(item.url); // Fetch da URL da imagem
+        const blob = await response.blob(); // Converte a imagem para Blob
+        return { uri: item.url, blob };
+      }));
+
+      setPhotos(fetchedPhotos);
     } catch (error) {
-      console.error('Error fetching photos:', error);
+      console.error('Erro ao buscar imagens do Supabase:', error.message);
     }
   };
 
@@ -31,9 +42,9 @@ export default function HomeScreen() {
   );
 
   const deletePhoto = async (photoUri: string) => {
-    const updatedPhotos = photos.filter(photo => photo !== photoUri);
+    const updatedPhotos = photos.filter(photo => photo.uri !== photoUri);
     setPhotos(updatedPhotos);
-    await AsyncStorage.setItem('photos', JSON.stringify(updatedPhotos));
+    await AsyncStorage.setItem('photos', JSON.stringify(updatedPhotos.map(photo => photo.uri)));
   };
 
   const confirmDelete = (photoUri: string) => {
@@ -47,19 +58,29 @@ export default function HomeScreen() {
     );
   };
 
+  const handlePremiumPressmensal = () => {
+    const url = 'https://mpago.la/1kvaeE6';
+    Linking.openURL(url);
+  };
+
+  const handlePremiumPressanual = () => {
+    const url = 'https://mpago.la/1MdGwXt';
+    Linking.openURL(url);
+  };
+
   const renderImages = () => {
     switch (activeSection) {
       case 'all':
       case 'photos':
         return (
           <View style={styles.imagesContainer}>
-            {photos.map((photoUri, index) => (
+            {photos.map((photo, index) => (
               <TouchableOpacity
                 key={index}
-                onPress={() => setSelectedImage(photoUri)}
-                onLongPress={() => confirmDelete(photoUri)}
+                onPress={() => setSelectedImage(photo.uri)}
+                onLongPress={() => confirmDelete(photo.uri)}
               >
-                <Image source={{ uri: photoUri }} style={styles.image} />
+                <Image source={{ uri: photo.uri }} style={styles.image} />
               </TouchableOpacity>
             ))}
           </View>
@@ -77,6 +98,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Componentes de UI restantes conforme o seu código anterior */}
       <View style={styles.backgroundContainer}>
         <Image
           source={require('./assets/fundo.png')}
@@ -112,6 +134,13 @@ export default function HomeScreen() {
         <Ionicons name="camera" size={32} color="black" />
       </TouchableOpacity>
 
+      <TouchableOpacity 
+        style={styles.subscriptionButton}
+        onPress={() => setSubscriptionModalVisible(true)}
+      >
+        <Ionicons name="ios-card" size={32} color="black" />
+      </TouchableOpacity>
+
       <Modal
         animationType="slide"
         transparent={false}
@@ -142,7 +171,39 @@ export default function HomeScreen() {
                 style={styles.modalImage}
               />
             )}
+            
           </TouchableOpacity>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={subscriptionModalVisible}
+        onRequestClose={() => setSubscriptionModalVisible(false)}
+      >
+        <View style={styles.subscriptionModalContainer}>
+          <View style={styles.subscriptionModalContent}>
+            <Text style={styles.subscriptionTitle}>Escolha sua assinatura</Text>
+            <TouchableOpacity 
+              style={styles.subscriptionOption}
+              onPress={handlePremiumPressmensal}
+            >
+              <Text style={styles.subscriptionText}>Premium Mensal - R$ 19,99</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.subscriptionOption}
+              onPress={handlePremiumPressanual}
+            >
+              <Text style={styles.subscriptionText}>Premium Anual - R$ 199,99</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setSubscriptionModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
