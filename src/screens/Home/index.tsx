@@ -1,50 +1,70 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Image, Modal, TouchableOpacity, Text, ScrollView, Alert, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Linking } from 'react-native';
+import { View, Image, Modal, TouchableOpacity, Text, ScrollView, Alert, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { supabase } from './supabase'; // Importe o supabase corretamente
-import { styles } from './styles';
+import { styles } from './styles'; // Importe seus estilos personalizados aqui
+import { createClient } from '@supabase/supabase-js';
+
+// Configuração do Supabase
+const supabaseUrl = 'https://cdqdjbuvwwpbzltkdxzj.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkcWRqYnV2d3dwYnpsdGtkeHpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTkzNTM2MTUsImV4cCI6MjAzNDkyOTYxNX0.btTbe-QQmjSP4bjqiqeri7nv2WkQC47t1pa9h4YZFmk';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<{ uri: string, blob?: Blob }[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [subscriptionModalVisible, setSubscriptionModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
 
-  const fetchPhotos = async () => {
+  const fetchPhotosFromSupabase = async () => {
     try {
-      const { data, error } = await supabase.storage.from('images').list();
+      console.log("Fetching photos from Supabase...");
+      const { data, error } = await supabase.storage.from('image-bucket').list('', { limit: 100 });
+
       if (error) {
-        console.error('Erro ao buscar imagens do Supabase:', error.message);
+        console.error('Error fetching photos from Supabase:', error.message);
         return;
       }
 
-      const fetchedPhotos = await Promise.all(data.map(async (item: any) => {
-        const response = await fetch(item.url); // Fetch da URL da imagem
-        const blob = await response.blob(); // Converte a imagem para Blob
-        return { uri: item.url, blob };
-      }));
+      if (data) {
+        const photoUrls = await Promise.all(data.map(async item => {
+          const { publicUrl } = supabase.storage.from('image-bucket').getPublicUrl(item.name).data;
+          return publicUrl;
+        }));
 
-      setPhotos(fetchedPhotos);
+        setPhotos(photoUrls);
+      }
     } catch (error) {
-      console.error('Erro ao buscar imagens do Supabase:', error.message);
+      console.error('Error fetching photos:', error.message);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchPhotos();
-    }, [])
-  );
+  useEffect(() => {
+    fetchPhotosFromSupabase();
+  }, []);
 
   const deletePhoto = async (photoUri: string) => {
-    const updatedPhotos = photos.filter(photo => photo.uri !== photoUri);
+    // Remove localmente da lista de fotos
+    const updatedPhotos = photos.filter(photo => photo !== photoUri);
     setPhotos(updatedPhotos);
-    await AsyncStorage.setItem('photos', JSON.stringify(updatedPhotos.map(photo => photo.uri)));
+    try {
+      await AsyncStorage.setItem('photos', JSON.stringify(updatedPhotos));
+    } catch (error) {
+      console.error('Error saving photos:', error);
+    }
+
+    // Remove do Supabase
+    const filename = photoUri.split('/').pop() || '';
+    const { error } = await supabase.storage.from('image-bucket').remove([filename]);
+
+    if (error) {
+      console.error('Error deleting photo from Supabase:', error.message);
+    }
   };
 
   const confirmDelete = (photoUri: string) => {
@@ -74,13 +94,13 @@ export default function HomeScreen() {
       case 'photos':
         return (
           <View style={styles.imagesContainer}>
-            {photos.map((photo, index) => (
+            {photos.map((photoUri, index) => (
               <TouchableOpacity
                 key={index}
-                onPress={() => setSelectedImage(photo.uri)}
-                onLongPress={() => confirmDelete(photo.uri)}
+                onPress={() => setSelectedImage(photoUri)}
+                onLongPress={() => confirmDelete(photoUri)}
               >
-                <Image source={{ uri: photo.uri }} style={styles.image} />
+                <Image source={{ uri: photoUri }} style={styles.image} />
               </TouchableOpacity>
             ))}
           </View>
@@ -98,7 +118,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Componentes de UI restantes conforme o seu código anterior */}
       <View style={styles.backgroundContainer}>
         <Image
           source={require('./assets/fundo.png')}
@@ -250,7 +269,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.smallButton, { marginRight: 10, marginLeft: 0 }]}
+          style={styles.smallButton}
           onPress={() => setActiveSection('videos')}
         >
           <Text style={[styles.smallButtonText, styles.blueText, { textAlign: 'center', color: activeSection === 'videos' ? 'black' : 'black' }]}>Videos</Text>
@@ -258,9 +277,21 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
+      {/* Renderização das imagens */}
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchPhotosFromSupabase().then(() => setRefreshing(false));
+            }}
+          />
+        }
+      >
         {renderImages()}
       </ScrollView>
+
     </View>
   );
 }
