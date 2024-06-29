@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Camera } from 'expo-camera';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Camera, CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from './supabase'; // Ajuste o caminho conforme necessário
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Importar AsyncStorage
+import { supabase } from './supabase'; // Importar o cliente do Supabase
 
 export default function CameraScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -21,75 +21,53 @@ export default function CameraScreen() {
     setIsCameraReady(true);
   };
 
-  const convertUriToBlob = async (uri: string) => {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return blob;
-  };
-
-  const uploadImage = async (blob: Blob, fileName: string) => {
-    const { data, error } = await supabase.storage
-      .from('posts')
-      .upload(fileName, blob, { contentType: 'image/jpeg' });
-
-    if (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
-      throw error;
-    }
-
-    const { data: urlData, error: urlError } = supabase
-      .storage
-      .from('posts')
-      .getPublicUrl(fileName);
-
-    if (urlError) {
-      console.error('Erro ao obter URL pública:', urlError);
-      throw urlError;
-    }
-
-    return urlData.publicUrl;
-  };
-
   const takePicture = async () => {
     if (!cameraRef.current) return;
-
+  
     try {
       const photo = await cameraRef.current.takePictureAsync();
       console.log('Photo URI:', photo.uri);
-
-      const blob = await convertUriToBlob(photo.uri);
-      const fileName = photo.uri.split('/').pop();
-      const imageUrl = await uploadImage(blob, fileName!);
-      console.log('Image uploaded to Supabase:', imageUrl);
-
+  
+      // Recuperar a lista de fotos existente do AsyncStorage
       let photos = await AsyncStorage.getItem('photos');
       photos = photos ? JSON.parse(photos) : [];
-
+  
+      // Verifique se 'photos' é uma lista antes de adicionar a nova foto
       if (Array.isArray(photos)) {
-        photos.push(imageUrl);
+        photos.push(photo.uri);
       } else {
-        photos = imageUrl ? [imageUrl] : [];
-      }
+        photos = photo.uri ? [photo.uri] : [];
 
+
+      }
+  
+      // Armazenar a lista atualizada de fotos no AsyncStorage
       await AsyncStorage.setItem('photos', JSON.stringify(photos));
-      console.log('Photo URL saved in AsyncStorage');
+  
+      console.log('Photo saved in AsyncStorage');
+       // Obter a extensão do arquivo
+       const ext = photo.uri.substring(photo.uri.lastIndexOf('.') + 1);
 
-      const { data, error } = await supabase
-        .from('posts')
-        .insert([{ image_url: imageUrl }]);
+       // Obter o nome do arquivo
+       const fileName = photo.uri.replace(/^.*[\\\/]/, '');
 
-      if (error) {
-        console.error('Erro ao salvar URL no banco de dados:', error);
-        throw error;
-      }
+      // Upload para o bucket de imagens do Supabase
+      const { data, error } = await supabase.storage
+        .from('image-bucket')
+        .upload(fileName, {
+          uri: photo.uri,
+          type: `image/${ext}`,
+          name: fileName
+        });
 
-      console.log('Image URL saved in Supabase database');
+      if (error) throw new Error(error.message);
+
+      console.log('Photo uploaded to Supabase:', data);
     } catch (error) {
       console.error('Erro ao tirar foto:', error);
-      Alert.alert('Erro', 'Erro ao tirar foto e enviar ao Supabase.');
     }
   };
-
+  
   if (hasPermission === null) {
     return <View />;
   }
@@ -100,7 +78,7 @@ export default function CameraScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Camera
+      <CameraView
         style={{ flex: 1 }}
         type={'back'}
         ref={cameraRef}
@@ -113,7 +91,7 @@ export default function CameraScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </Camera>
+      </CameraView>
     </View>
   );
 }
